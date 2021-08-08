@@ -1,0 +1,294 @@
+#!/usr/bin/env -S python3 -m avantpy --lang ga -s
+
+# (commented rather than docstringed, as they should be as Gaeilge)
+
+# Import the time library
+iompórt antam
+
+# Import the curses library
+ó curses iompórt rapar
+
+# Convience variable for the square root of 1/2
+rc2 = 1 / 2 ** 0.5
+
+# Directions that the counters can move
+TREOIR = [
+    (1, 0, 1, 0),
+    (rc2, rc2, 1, 1),
+    (0, 1, 0, 1),
+    (-rc2, rc2, -1, 1),
+    (-1, 0, -1, 0),
+    (-rc2, -rc2, -1, -1),
+    (0, -1, 0, -1),
+    (rc2, -rc2, 1, -1),
+]
+
+# Routine for loading the level from a file
+sain lódáil_leibhéal(comhad):
+    # Pull in all the ASCII art lines
+    le oscail(comhad, 'r') mar c:
+        leibhéal_líosta = c.léadhlínte()
+
+    # Width and height
+    leithead = fad(leibhéal_líosta[0].lomadh())
+    airde = fad(leibhéal_líosta)
+
+    # Build up starting locations from the symbols
+    tosú_na_himreoirí = []
+    naimhde = []
+    imeacht = []
+    sain lódáil_cearnóg(car, i, l):
+        uilíoch tosú_an_imreora
+        má car == ' ':
+            aisch Cearnóg
+        eimá car == '.':
+            aisch Ball
+        eimá car == 'P':
+            tosú_na_himreoirí.iarcheanglaíodh((i, l))
+        eimá car == 'O':
+            imeacht.iarcheanglaíodh((i, l))
+        eimá car == 'X':
+            namhaid = Namhaid()
+            naimhde.iarcheanglaíodh((namhaid, i, l))
+
+        aisch Cearnóg
+
+    return [
+        [
+            lódáil_cearnóg(leibhéal_líosta[airde - i - 1][l], i, l)
+            do l i_ raon(leithead)
+        ] do i i_ raon(airde)
+    ], tosú_na_himreoirí, naimhde, imeacht
+
+# No units in this square
+aicme NílAnAonánSaChearnógEisceacht(Eisceacht):
+    léimeadh
+
+# Square is already full
+aicme CearnógLánEisceacht(Eisceacht):
+    léimeadh
+
+# Generic entity
+aicme Aonán:
+    cearnóg = Neodar
+
+    sain cuir_cearnóg(féin, cearnóg):
+        féin.cearnóg = cearnóg
+
+# Sprite-like Counters
+aicme Licín(Aonán):
+    siombail = '@'
+    sain __tús__(féin, siombail=None):
+        má siombail ~ ní Neodar:
+            féin.siombail = siombail
+
+    # Representation without unicode
+    sain __léir__(féin):
+        aisch '@_'
+
+    # Unicode symbol as icon
+    sain __tea__(féin):
+        aisch féin.siombail
+
+    # Get a move for this counter
+    sain faigh_aistriú(féin, scáileán):
+        má féin.cearnóg:
+            bosca = féin.cearnóg.bosca
+            áit = líosta(féin.cearnóg.áit)
+
+            # By default, counters make the most direct move towards
+            # a player, looping through possible directions
+            do i, ró i_ enumerate(bosca.maitrís):
+                do l, cearnóg i_ enumerate(ró):
+                    do aonán i_ cearnóg.inneachar:
+                        má isásc(aonán, Imreoir):
+                            targaid = (i - áit[0], l - áit[1])
+                            má dea(targaid[0]) + dea(targaid[1]) <= 1:
+                                targaid = (áit[0] - i, áit[1] - l)
+                            briseadh
+
+            treoir_ordú = sorted(TREOIR, key=lambda t: t[0] * targaid[0] + t[1] * targaid[1], reverse=True)
+            do treor i_ treoir_ordú:
+                athrú = [treor[2], treor[3]]
+
+                áit_nua = líosta(áit)
+                áit_nua[0] += athrú[0]
+                áit_nua[1] += athrú[1]
+                má bosca.an_folamh((áit_nua[0], áit_nua[1]), féin):
+                    áit = áit_nua
+                    briseadh
+
+            aisch áit
+        aisch Neodar
+
+# Enemies can function with the default counter implementation
+aicme Namhaid(Licín):
+    sain __tús__(féin, siombail='\U0001F482'):
+        foraicme().__tús__(siombail)
+
+    sain faigh_aistriú(féin, scáileán):
+        return super().faigh_aistriú(scáileán)
+
+# Players need interactivity
+aicme Imreoir(Licín):
+    sain __tús__(féin, ionchuir_ag, imeacht, siombail='\U0001F464'):
+        foraicme().__tús__(siombail)
+        féin.ionchuir_aisghlaoch = ionchuir_ag
+        féin.imeacht = imeacht
+
+    sain __léir__(féin):
+        aisch 'P_'
+
+    # Get the desired move from input
+    sain faigh_aistriú(féin, scáileán):
+        má féin.cearnóg:
+            áit = líosta(féin.cearnóg.áit)
+            athrú = féin.ionchuir_aisghlaoch()
+
+            má athrú ~ Neodar:
+                aisch Neodar
+
+            áit[0] += athrú[0]
+            áit[1] += athrú[1]
+
+            aisch áit
+        aisch Neodar
+
+# Implementation of a game square
+aicme Cearnóg:
+    siombail = '  '
+
+    sain __tús__(féin, bosca, i, l, inneachar=Neodar, siombail_réamhshocraithe=None):
+        má siombail_réamhshocraithe ~ Neodar:
+            siombail_réamhshocraithe = féin.siombail
+        féin.siombail_réamhshocraithe = siombail_réamhshocraithe
+        féin.inneachar = inneachar má inneachar ~ ní Neodar eile []
+        féin.bosca = bosca
+        féin.áit = (i, l)
+
+    # Check if the square is empty
+    sain an_folamh(féin, aonán):
+        aisch fad(féin.inneachar) == 0
+
+    # Add an entity to this square
+    sain tuill(féin, aonán):
+        má fad(féin.inneachar) > 0:
+            tógtar CearnógLánEisceacht()
+        féin.inneachar.iarcheanglaíodh(aonán)
+        aonán.cuir_cearnóg(féin)
+
+    # Remove an entity from this square
+    sain maolaigh(féin, aonán):
+        má aonán i_ féin.inneachar:
+            féin.inneachar.baineadh(aonán)
+            aonán.cuir_cearnóg(Neodar)
+        eile:
+            tógtar NílAnAonánSaChearnógEisceacht()
+
+    # Render the square (with entity if present)
+    sain __léir__(féin):
+        má fad(féin.inneachar) > 0:
+            aisch tea(féin.inneachar[-1])
+        aisch féin.siombail_réamhshocraithe
+
+    sain __tea__(féin):
+        aisch féin.__léir__()
+
+# Overall matrix-like box of squares
+aicme Bosca:
+    sain __tús__(féin, léarscáil, scáileán):
+        féin.maitrís = [
+            [cearnóg(féin, i, l) do l, cearnóg i_ áirigh(ró)] do i, ró i_ áirigh(léarscáil)
+        ]
+        féin.scáileán = scáileán
+
+    # Does the desired move lead to a valid, empty square?
+    sain an_folamh(féin, aistriú, aonán):
+        i, l = aistriú
+
+        má i < 0 nó i > fad(féin.maitrís) - 1:
+            aisch Bréagach
+
+        má l < 0 nó l > fad(féin.maitrís[0]) - 1:
+            aisch Bréagach
+
+        aisch féin.maitrís[i][l].an_folamh(aonán)
+
+    # Make a move for a counter, if possible
+    sain aistrigh(féin, aisteoir):
+        má aisteoir.cearnóg:
+            chomhfada Fíor:
+                aistriú = aisteoir.faigh_aistriú(féin.scáileán)
+                má aistriú ~ Neodar:
+                    briseadh
+                má féin.an_folamh(aistriú, aisteoir):
+                    i, l = aistriú
+                    aisteoir.cearnóg.maolaigh(aisteoir)
+                    féin.maitrís[i][l].tuill(aisteoir)
+                    briseadh
+
+    # Render the whole board
+    sain __tea__(féin):
+        maitrís = féin.maitrís[::-1]
+        aisch ("\n" + "-" * (fad(maitrís[0] * 5) - 3) + "\n").comhcheanglaíodh(
+            [" | ".comhcheanglaíodh([tea(s) do s i_ ró]) do ró i_ maitrís]
+        )
+
+# Simple wall implementation - never empty
+aicme Ball(Cearnóg):
+    siombail = '..'
+
+    sain an_folamh(féin, aonán):
+        aisch Bréagach
+
+# Overall run loop
+sain rith(scáileán):
+    scáileán.glanadh()
+
+    léarscáil, tosú_na_himreoirí, naimhde, imeacht = lódáil_leibhéal('leibhéal_2.dat')
+    bosca = Bosca(léarscáil, scáileán=scáileán)
+
+    # Get a key interactively, either by vim directions or cardinal directions
+    sain faigh_eochair():
+        # Get key from curses
+        eochair = scáileán.faigheochair()
+        scáileán.cuirtea(0, 0, eochair)
+
+        má eochair i_ ('i', 'h'): # clé
+            aisch (0, -1)
+        eimá eochair i_ ('o', 'l'): # deis
+            aisch (0, 1)
+        eimá eochair i_ ('d', 'j'): # síos
+            aisch (-1, 0)
+        eimá eochair i_ ('t', 'k'): # suas
+            aisch (1, 0)
+        eimá eochair i_ ('f', ' '): # fan
+            aisch Neodar
+
+        scáileán.cuirtea(1, 0, '?')
+
+        aisch faigh_eochair()
+
+    # Create a player
+    imreoir = Imreoir(faigh_eochair, imeacht)
+    i, l = tosú_na_himreoirí[0]
+    bosca.maitrís[i][l].tuill(imreoir)
+
+    # Set up the list of actors/counters
+    aisteoirí = [imreoir]
+    do namhaid, i, l i_ naimhde:
+        aisteoirí.iarcheanglaíodh(namhaid)
+        bosca.maitrís[i][l].tuill(namhaid)
+
+    # Actual gameloop
+    chomhfada Fíor:
+        do aisteoir i_ aisteoirí:
+            scáileán.cuirtea(10, 0, tea(bosca))
+            bosca.aistrigh(aisteoir)
+            scáileán.refresh()
+            antam.codlaíodh(0.2)
+        má imreoir.cearnóg.áit in imeacht:
+            aisch
+
+má __ainm__ == '__príomhúil__':
+    rapar(rith)
