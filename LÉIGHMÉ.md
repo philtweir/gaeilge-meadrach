@@ -1,6 +1,6 @@
 # gaeilge-meadrach
 
-Cluíche simplí atá scríofa i nGaeilge a úsáideann AvantPy
+Cluíche simplí atá scríofa i nGaeilge a úsáideann [AvantPy](https://github.com/philtweir/avantpy-extended)
 
 https://user-images.githubusercontent.com/1624699/128638073-3f7023fe-35be-4845-b3fd-e2317b370089.mp4
 
