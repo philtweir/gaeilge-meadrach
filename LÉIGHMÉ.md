@@ -21,3 +21,10 @@ Le poetry:
 nó
 
     poetry run ./méadrach3d_clno.pyga
+
+Le docker:
+
+    > docker run -v $(pwd):/app --rm -ti python:3 /bin/bash
+    $ pip install poetry
+    $ poetry install
+    $ ./méadrach.sh
