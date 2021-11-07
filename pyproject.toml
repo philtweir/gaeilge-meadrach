@@ -6,6 +6,7 @@ authors = ["Phil Weir <phil.weir@flaxandteal.co.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+avantpy-extended = { git = "https://github.com/philtweir/avantpy-extended.git", branch = "master" }
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
