@@ -345,7 +345,7 @@ class Scáilean(TaispeánadhBonn):
 # Overall run loop
 async sain rith(scáileán):
     #scáileán.run() # ""
-    léarscáil, tosú_na_himreoirí, naimhde, imeacht = lódáil_leibhéal('leibhéal_2.dat')
+    léarscáil, tosú_na_himreoirí, naimhde, imeacht = lódáil_leibhéal(os.path.join('leibhéil', 'leibhéal_2.dat'))
     bosca = Bosca(léarscáil, scáileán=scáileán)
 
     # Get a key interactively, either by vim directions or cardinal directions
