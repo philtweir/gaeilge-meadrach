@@ -6,8 +6,11 @@ authors = ["Phil Weir <phil.weir@flaxandteal.co.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-avantpy-extended = { git = "https://github.com/philtweir/avantpy-extended.git", branch = "master" }
+avantpy-extended = "^0.1.2"
 Panda3D = "^1.10.10"
+"avantpy-trans.curses" = "^0.0.2"
+"avantpy-trans.panda3d" = "0.0.2"
+"avantpy-trans.direct" = "^0.0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
